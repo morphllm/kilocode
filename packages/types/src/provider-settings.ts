@@ -72,7 +72,6 @@ const baseProviderSettingsSchema = z.object({
 	// Morph fast apply settings
 	morphEnabled: z.boolean().optional(),
 	morphApiKey: z.string().optional(),
-	morphBaseUrl: z.string().optional(),
 
 	// // kilocode_change start
 	// kilocodeToken: z.string().optional(),

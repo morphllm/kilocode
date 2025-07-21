@@ -737,7 +737,8 @@ const MorphSettingsInternal = ({
 						value={apiConfiguration.morphApiKey || ""}
 						placeholder="Enter your Morph API key (optional)"
 						onInput={handleInputChange("morphApiKey", inputEventTransform)}
-						data-testid="morph-api-key">
+						data-testid="morph-api-key"
+						className="w-full">
 						API Key
 					</VSCodeTextField>
 				</div>
