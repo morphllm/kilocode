@@ -97,6 +97,7 @@ import { KiloCode } from "../kilocode/settings/providers/KiloCode" // kilocode_c
 import { KiloCodeAdvanced } from "../kilocode/settings/providers/KiloCodeAdvanced" // kilocode_change
 import { buildDocLink } from "@src/utils/docLinks"
 import { cerebrasDefaultModelId } from "@roo/api"
+import { Checkbox } from "vscrui"
 
 export interface ApiOptionsProps {
 	uriScheme: string | undefined
@@ -691,6 +692,11 @@ const ApiOptions = ({
 							value={apiConfiguration.rateLimitSeconds || 0}
 							onChange={(value) => setApiConfigurationField("rateLimitSeconds", value)}
 						/>
+					<MorphSettingsInternal
+						apiConfiguration={apiConfiguration}
+						handleInputChange={handleInputChange}
+						setApiConfigurationField={setApiConfigurationField}
+					/>
 						<ConsecutiveMistakeLimitControl
 							value={
 								apiConfiguration.consecutiveMistakeLimit !== undefined
@@ -752,6 +758,69 @@ const ApiOptions = ({
 							)}
 					</CollapsibleContent>
 				</Collapsible>
+			)}
+		</div>
+	)
+}
+
+interface MorphSettingsProps {
+	apiConfiguration: ProviderSettings
+	setApiConfigurationField: <K extends keyof ProviderSettings>(field: K, value: ProviderSettings[K]) => void
+}
+
+interface MorphSettingsInternalProps {
+	apiConfiguration: ProviderSettings
+	handleInputChange: <K extends keyof ProviderSettings, E>(
+		field: K,
+		transform?: (event: E) => ProviderSettings[K],
+	) => (event: E | Event) => void
+	setApiConfigurationField: <K extends keyof ProviderSettings>(field: K, value: ProviderSettings[K]) => void
+}
+
+const MorphSettingsInternal = ({
+	apiConfiguration,
+	handleInputChange,
+	setApiConfigurationField,
+}: MorphSettingsInternalProps) => {
+	const { t } = useAppTranslation()
+
+	const handleMorphEnabledChange = (enabled: boolean) => {
+		setApiConfigurationField("morphEnabled", enabled)
+	}
+
+	return (
+		<div className="space-y-3">
+			<Checkbox
+				checked={apiConfiguration.morphEnabled || false}
+				onChange={handleMorphEnabledChange}
+				data-testid="morph-enabled-checkbox">
+				Enable Editing with Morph FastApply
+			</Checkbox>
+
+			{apiConfiguration.morphEnabled && (
+				<div className="space-y-3 pl-6">
+					<div className="text-xs text-vscode-descriptionForeground">
+						Configure Morph for AI-powered fast file editing. Leave API key empty to use OpenRouter if
+						available.
+					</div>
+
+					<VSCodeTextField
+						value={apiConfiguration.morphBaseUrl || "https://api.morphllm.com/v1"}
+						placeholder="https://api.morphllm.com/v1"
+						onInput={handleInputChange("morphBaseUrl", inputEventTransform)}
+						data-testid="morph-base-url">
+						Base URL
+					</VSCodeTextField>
+
+					<VSCodeTextField
+						type="password"
+						value={apiConfiguration.morphApiKey || ""}
+						placeholder="Enter your Morph API key (optional)"
+						onInput={handleInputChange("morphApiKey", inputEventTransform)}
+						data-testid="morph-api-key">
+						API Key
+					</VSCodeTextField>
+				</div>
 			)}
 		</div>
 	)
