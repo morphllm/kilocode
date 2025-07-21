@@ -269,7 +269,7 @@ async function getMorphConfiguration(apiConfig: any): Promise<MorphConfiguration
 		return {
 			available: true,
 			apiKey: apiConfig.morphApiKey,
-			baseUrl: apiConfig.morphBaseUrl || "https://api.morphllm.com/v1",
+			baseUrl: "https://api.morphllm.com/v1",
 			model: "auto",
 		}
 	}
