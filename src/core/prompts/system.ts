@@ -48,7 +48,7 @@ function getMorphInstructions(cwd: string, supportsComputerUse: boolean, setting
 	return morphAvailable
 		? `
 
-		Morph FastApply is enabled. When making any file edits, you MUST ALWAYS use the \`edit_file\` tool instead of other editing tools like \`write_to_file\`, \`search_and_replace\`, or \`apply_diff\`. The \`edit_file\` tool uses advanced AI-powered editing capabilities that provide faster, more accurate results.**
+		Morph FastApply is enabled. When making any file edits, you MUST ALWAYS use the \`edit_file\` tool instead of other editing tools like \`write_to_file\`, \`search_and_replace\`, or \`apply_diff\`. The \`edit_file\` tool uses a less intelligent specialized model to apply code edits to files.**
 `
 		: ""
 }
