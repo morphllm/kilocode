@@ -574,6 +574,36 @@ describe("ApiOptions", () => {
 	})
 
 	describe("Morph settings tests", () => {
+		it("automatically enables Morph when OpenRouter provider is selected", () => {
+			const mockSetApiConfigurationField = vi.fn()
+
+			// Test that when the component is rendered with openrouter provider
+			// and morphEnabled is false, it automatically calls setApiConfigurationField to enable morph
+			renderApiOptions({
+				apiConfiguration: {
+					apiProvider: "openrouter",
+					morphEnabled: false,
+				},
+				setApiConfigurationField: mockSetApiConfigurationField,
+			})
+
+			// The useEffect should automatically call setApiConfigurationField to enable Morph
+			expect(mockSetApiConfigurationField).toHaveBeenCalledWith("morphEnabled", true)
+		})
+
+		it("shows Morph checkbox as checked when OpenRouter is configured with Morph enabled", () => {
+			renderApiOptions({
+				apiConfiguration: {
+					apiProvider: "openrouter",
+					morphEnabled: true, // Already enabled
+				},
+			})
+
+			const morphCheckbox = screen.getByTestId("checkbox-enable-editing-with-morph-fastapply")
+			const checkboxInput = morphCheckbox.querySelector('input[type="checkbox"]') as HTMLInputElement
+			expect(checkboxInput).toBeChecked()
+		})
+
 		it("shows Morph settings checkbox when not in welcome view", () => {
 			renderApiOptions({
 				apiConfiguration: {

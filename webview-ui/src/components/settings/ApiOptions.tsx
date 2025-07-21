@@ -203,6 +203,13 @@ const ApiOptions = ({
 		}
 	}, [selectedModelId, setApiConfigurationField, apiConfiguration.apiModelId])
 
+	// Automatically enable Morph when OpenRouter is the selected provider
+	useEffect(() => {
+		if (selectedProvider === "openrouter" && !apiConfiguration.morphEnabled) {
+			setApiConfigurationField("morphEnabled", true)
+		}
+	}, [selectedProvider, apiConfiguration.morphEnabled, setApiConfigurationField])
+
 	// Debounced refresh model updates, only executed 250ms after the user
 	// stops typing.
 	useDebounce(
@@ -272,6 +279,11 @@ const ApiOptions = ({
 	const onProviderChange = useCallback(
 		(value: ProviderName) => {
 			setApiConfigurationField("apiProvider", value)
+
+			// Automatically enable Morph when OpenRouter is selected
+			if (value === "openrouter") {
+				setApiConfigurationField("morphEnabled", true)
+			}
 
 			// It would be much easier to have a single attribute that stores
 			// the modelId, but we have a separate attribute for each of
@@ -763,11 +775,6 @@ const ApiOptions = ({
 	)
 }
 
-interface MorphSettingsProps {
-	apiConfiguration: ProviderSettings
-	setApiConfigurationField: <K extends keyof ProviderSettings>(field: K, value: ProviderSettings[K]) => void
-}
-
 interface MorphSettingsInternalProps {
 	apiConfiguration: ProviderSettings
 	handleInputChange: <K extends keyof ProviderSettings, E>(
@@ -782,8 +789,6 @@ const MorphSettingsInternal = ({
 	handleInputChange,
 	setApiConfigurationField,
 }: MorphSettingsInternalProps) => {
-	const { t } = useAppTranslation()
-
 	const handleMorphEnabledChange = (enabled: boolean) => {
 		setApiConfigurationField("morphEnabled", enabled)
 	}

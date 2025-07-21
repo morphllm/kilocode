@@ -254,23 +254,23 @@ async function getMorphConfiguration(apiConfig: any): Promise<MorphConfiguration
 		}
 	}
 
-	// If user has direct Morph API key, use it
+	// If user is using OpenRouter as their provider, use Morph through OpenRouter
+	if (apiConfig.apiProvider === "openrouter" && apiConfig.openRouterApiKey) {
+		return {
+			available: true,
+			apiKey: apiConfig.openRouterApiKey,
+			baseUrl: apiConfig.openRouterBaseUrl || "https://openrouter.ai/api/v1",
+			model: "morph/morph-v3-large", // Morph model via OpenRouter
+		}
+	}
+
+	// Otherwise, if user has direct Morph API key, use it
 	if (apiConfig.morphApiKey) {
 		return {
 			available: true,
 			apiKey: apiConfig.morphApiKey,
 			baseUrl: apiConfig.morphBaseUrl || "https://api.morphllm.com/v1",
-			model: "morph-v3-large",
-		}
-	}
-
-	// Otherwise, check if user is using OpenRouter and can use Morph through it
-	if (apiConfig.apiProvider === "openrouter" && apiConfig.openRouterApiKey) {
-		return {
-			available: true,
-			apiKey: apiConfig.openRouterApiKey,
-			baseUrl: "https://openrouter.ai/api/v1",
-			model: "morph/v3-large", // Morph model via OpenRouter
+			model: "auto",
 		}
 	}
 
