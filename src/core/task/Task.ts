@@ -1885,12 +1885,6 @@ export class Task extends EventEmitter<ClineEvents> {
 			({ role, content }) => ({ role, content }),
 		)
 
-		// Log the API request being sent (optional)
-		// console.log(`[API Request] Task ${this.taskId}.${this.instanceId}:`, {
-		// 	systemPrompt: systemPrompt.substring(0, 500) + '...', // Truncated for readability
-		// 	conversationHistory: cleanConversationHistory
-		// })
-
 		// Check if we've reached the maximum number of auto-approved requests
 		const maxRequests = state?.allowedMaxRequests || Infinity
 

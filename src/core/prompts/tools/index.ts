@@ -27,19 +27,14 @@ import { getUpdateTodoListDescription } from "./update-todo-list"
 import { CodeIndexManager } from "../../../services/code-index/manager"
 
 export function checkMorphAvailability(args: ToolArgs): boolean {
-	// Check if Morph is enabled in API configuration
 	const { settings } = args
 
 	if (!settings) {
 		return false
 	}
 
-	// Check if Morph is enabled and has necessary configuration
 	const morphEnabled = settings.morphEnabled === true
 
-	// If enabled, check if we have either:
-	// 1. Direct Morph API key
-	// 2. OpenRouter with API key (can access Morph through OpenRouter)
 	if (morphEnabled) {
 		const hasMorphApiKey = Boolean(settings.morphApiKey)
 		const hasOpenRouterAccess = settings.apiProvider === "openrouter" && Boolean(settings.openRouterApiKey)
