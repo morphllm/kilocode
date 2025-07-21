@@ -13,7 +13,7 @@ import { CodeIndexManager } from "../../services/code-index/manager"
 
 import { PromptVariables, loadSystemPromptFile } from "./sections/custom-system-prompt"
 
-import { getToolDescriptionsForMode } from "./tools"
+import { getToolDescriptionsForMode, checkMorphAvailability } from "./tools"
 import {
 	getRulesSection,
 	getSystemInfoSection,
@@ -80,6 +80,16 @@ async function generatePrompt(
 
 	const codeIndexManager = CodeIndexManager.getInstance(context)
 
+	// Check if Morph is available and add specific instructions
+	const morphAvailable = checkMorphAvailability({ cwd, supportsComputerUse, settings })
+
+	const morphInstructions = morphAvailable
+		? `
+
+		Morph FastApply is enabled. When making any file edits, you MUST ALWAYS use the \`edit_file\` tool instead of other editing tools like \`write_to_file\`, \`search_and_replace\`, or \`apply_diff\`. The \`edit_file\` tool uses advanced AI-powered editing capabilities that provide faster, more accurate results.**
+`
+		: ""
+
 	const basePrompt = `${roleDefinition}
 
 ${markdownFormattingSection()}
@@ -101,6 +111,8 @@ ${getToolDescriptionsForMode(
 )}
 
 ${getToolUseGuidelinesSection(codeIndexManager)}
+
+${morphInstructions}
 
 ${mcpServersSection}
 
@@ -183,10 +195,33 @@ export const SYSTEM_PROMPT = async (
 			{ language: language ?? formatLanguage(vscode.env.language), rooIgnoreInstructions },
 		)
 
+		// Check if Morph is available and add specific instructions for custom prompts too
+		const morphAvailable = checkMorphAvailability({ cwd, supportsComputerUse, settings })
+
+		const morphInstructions = morphAvailable
+			? `
+
+## MORPH EDITING INSTRUCTIONS
+
+**CRITICAL: Morph FastApply is enabled. When making any file edits, you MUST ALWAYS use the \`edit_file\` tool instead of other editing tools like \`write_to_file\`, \`search_and_replace\`, or \`apply_diff\`. The \`edit_file\` tool uses advanced AI-powered editing capabilities that provide faster, more accurate results.**
+
+**Always prefer \`edit_file\` for:**
+- Any file modifications, updates, or changes
+- Adding new code or content to existing files
+- Refactoring or restructuring code
+- Bug fixes and improvements
+
+**Only use other tools when \`edit_file\` is not available or appropriate (e.g., creating entirely new files with \`write_to_file\`).**
+
+`
+			: ""
+
 		// For file-based prompts, don't include the tool sections
 		return `${roleDefinition}
 
 ${fileCustomSystemPrompt}
+
+${morphInstructions}
 
 ${customInstructions}`
 	}

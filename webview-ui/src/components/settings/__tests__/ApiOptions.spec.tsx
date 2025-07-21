@@ -11,10 +11,16 @@ import ApiOptions, { ApiOptionsProps } from "../ApiOptions"
 
 // Mock VSCode components
 vi.mock("@vscode/webview-ui-toolkit/react", () => ({
-	VSCodeTextField: ({ children, value, onBlur }: any) => (
+	VSCodeTextField: ({ children, value, onBlur, onInput, type, placeholder, "data-testid": dataTestId }: any) => (
 		<div>
 			{children}
-			<input type="text" value={value} onChange={onBlur} />
+			<input
+				type={type || "text"}
+				value={value}
+				onChange={onInput || onBlur}
+				placeholder={placeholder}
+				data-testid={dataTestId}
+			/>
 		</div>
 	),
 	VSCodeLink: ({ children, href }: any) => <a href={href}>{children}</a>,
@@ -524,6 +530,109 @@ describe("ApiOptions", () => {
 			})
 
 			expect(screen.queryByTestId("litellm-provider")).not.toBeInTheDocument()
+		})
+	})
+
+	describe("Morph settings tests", () => {
+		it("shows Morph settings checkbox when not in welcome view", () => {
+			renderApiOptions({
+				apiConfiguration: {
+					morphEnabled: false,
+				},
+			})
+
+			const checkbox = screen.getByTestId("checkbox-enable-editing-with-morph-fastapply")
+			expect(checkbox).toBeInTheDocument()
+			expect(checkbox.querySelector('input[type="checkbox"]')).not.toBeChecked()
+		})
+
+		it("shows Morph configuration fields when enabled", () => {
+			const mockSetApiConfigurationField = vi.fn()
+			renderApiOptions({
+				apiConfiguration: {
+					morphEnabled: true,
+					morphBaseUrl: "https://api.morphllm.com/v1",
+					morphApiKey: "test-key",
+				},
+				setApiConfigurationField: mockSetApiConfigurationField,
+			})
+
+			expect(
+				screen
+					.getByTestId("checkbox-enable-editing-with-morph-fastapply")
+					.querySelector('input[type="checkbox"]'),
+			).toBeChecked()
+			expect(screen.getByTestId("morph-base-url")).toHaveValue("https://api.morphllm.com/v1")
+			expect(screen.getByTestId("morph-api-key")).toHaveValue("test-key")
+		})
+
+		it("calls setApiConfigurationField when Morph enabled checkbox is toggled", () => {
+			const mockSetApiConfigurationField = vi.fn()
+			renderApiOptions({
+				apiConfiguration: {
+					morphEnabled: false,
+				},
+				setApiConfigurationField: mockSetApiConfigurationField,
+			})
+
+			const checkbox = screen.getByTestId(
+				"checkbox-input-enable-editing-with-morph-fastapply",
+			) as HTMLInputElement
+			fireEvent.click(checkbox)
+
+			expect(mockSetApiConfigurationField).toHaveBeenCalledWith("morphEnabled", true)
+		})
+
+		it("calls setApiConfigurationField when Morph API key changes", () => {
+			const mockSetApiConfigurationField = vi.fn()
+			renderApiOptions({
+				apiConfiguration: {
+					morphEnabled: true,
+				},
+				setApiConfigurationField: mockSetApiConfigurationField,
+			})
+
+			const apiKeyInput = screen.getByTestId("morph-api-key") as HTMLInputElement
+			fireEvent.change(apiKeyInput, { target: { value: "new-api-key" } })
+
+			expect(mockSetApiConfigurationField).toHaveBeenCalledWith("morphApiKey", "new-api-key")
+		})
+
+		it("calls setApiConfigurationField when Morph base URL changes", () => {
+			const mockSetApiConfigurationField = vi.fn()
+			renderApiOptions({
+				apiConfiguration: {
+					morphEnabled: true,
+				},
+				setApiConfigurationField: mockSetApiConfigurationField,
+			})
+
+			const baseUrlInput = screen.getByTestId("morph-base-url") as HTMLInputElement
+			fireEvent.change(baseUrlInput, { target: { value: "https://custom.morphllm.com/v1" } })
+
+			expect(mockSetApiConfigurationField).toHaveBeenCalledWith("morphBaseUrl", "https://custom.morphllm.com/v1")
+		})
+
+		it("hides Morph configuration fields when disabled", () => {
+			renderApiOptions({
+				apiConfiguration: {
+					morphEnabled: false,
+				},
+			})
+
+			expect(screen.queryByTestId("morph-base-url")).not.toBeInTheDocument()
+			expect(screen.queryByTestId("morph-api-key")).not.toBeInTheDocument()
+		})
+
+		it("does not show Morph settings in welcome view", () => {
+			renderApiOptions({
+				fromWelcomeView: true,
+				apiConfiguration: {
+					morphEnabled: true,
+				},
+			})
+
+			expect(screen.queryByTestId("checkbox-enable-editing-with-morph-fastapply")).not.toBeInTheDocument()
 		})
 	})
 })

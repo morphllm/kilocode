@@ -1548,6 +1548,9 @@ export class Task extends EventEmitter<ClineEvents> {
 			let didEndLoop = false
 
 			if (assistantMessage.length > 0) {
+				// Log the complete API response
+				console.log(`[API Response] Task ${this.taskId}.${this.instanceId}:`, assistantMessage)
+
 				await this.addToApiConversationHistory({
 					role: "assistant",
 					content: [{ type: "text", text: assistantMessage }],
@@ -1728,6 +1731,7 @@ export class Task extends EventEmitter<ClineEvents> {
 			language,
 			maxConcurrentFileReads,
 			maxReadFileLine,
+			apiConfiguration,
 		} = state ?? {}
 
 		return await (async () => {
@@ -1756,6 +1760,7 @@ export class Task extends EventEmitter<ClineEvents> {
 				rooIgnoreInstructions,
 				maxReadFileLine !== -1,
 				{
+					...apiConfiguration,
 					maxConcurrentFileReads,
 				},
 			)
@@ -1879,6 +1884,12 @@ export class Task extends EventEmitter<ClineEvents> {
 		const cleanConversationHistory = maybeRemoveImageBlocks(messagesSinceLastSummary, this.api).map(
 			({ role, content }) => ({ role, content }),
 		)
+
+		// Log the API request being sent (optional)
+		// console.log(`[API Request] Task ${this.taskId}.${this.instanceId}:`, {
+		// 	systemPrompt: systemPrompt.substring(0, 500) + '...', // Truncated for readability
+		// 	conversationHistory: cleanConversationHistory
+		// })
 
 		// Check if we've reached the maximum number of auto-approved requests
 		const maxRequests = state?.allowedMaxRequests || Infinity
