@@ -621,7 +621,6 @@ describe("ApiOptions", () => {
 			renderApiOptions({
 				apiConfiguration: {
 					morphEnabled: true,
-					morphBaseUrl: "https://api.morphllm.com/v1",
 					morphApiKey: "test-key",
 				},
 				setApiConfigurationField: mockSetApiConfigurationField,
@@ -632,7 +631,6 @@ describe("ApiOptions", () => {
 					.getByTestId("checkbox-enable-editing-with-morph-fastapply")
 					.querySelector('input[type="checkbox"]'),
 			).toBeChecked()
-			expect(screen.getByTestId("morph-base-url")).toHaveValue("https://api.morphllm.com/v1")
 			expect(screen.getByTestId("morph-api-key")).toHaveValue("test-key")
 		})
 
@@ -668,21 +666,6 @@ describe("ApiOptions", () => {
 			expect(mockSetApiConfigurationField).toHaveBeenCalledWith("morphApiKey", "new-api-key")
 		})
 
-		it("calls setApiConfigurationField when Morph base URL changes", () => {
-			const mockSetApiConfigurationField = vi.fn()
-			renderApiOptions({
-				apiConfiguration: {
-					morphEnabled: true,
-				},
-				setApiConfigurationField: mockSetApiConfigurationField,
-			})
-
-			const baseUrlInput = screen.getByTestId("morph-base-url") as HTMLInputElement
-			fireEvent.change(baseUrlInput, { target: { value: "https://custom.morphllm.com/v1" } })
-
-			expect(mockSetApiConfigurationField).toHaveBeenCalledWith("morphBaseUrl", "https://custom.morphllm.com/v1")
-		})
-
 		it("hides Morph configuration fields when disabled", () => {
 			renderApiOptions({
 				apiConfiguration: {
@@ -690,7 +673,6 @@ describe("ApiOptions", () => {
 				},
 			})
 
-			expect(screen.queryByTestId("morph-base-url")).not.toBeInTheDocument()
 			expect(screen.queryByTestId("morph-api-key")).not.toBeInTheDocument()
 		})
 

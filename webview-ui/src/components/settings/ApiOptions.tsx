@@ -810,14 +810,6 @@ const MorphSettingsInternal = ({
 					</div>
 
 					<VSCodeTextField
-						value={apiConfiguration.morphBaseUrl || "https://api.morphllm.com/v1"}
-						placeholder="https://api.morphllm.com/v1"
-						onInput={handleInputChange("morphBaseUrl", inputEventTransform)}
-						data-testid="morph-base-url">
-						Base URL
-					</VSCodeTextField>
-
-					<VSCodeTextField
 						type="password"
 						value={apiConfiguration.morphApiKey || ""}
 						placeholder="Enter your Morph API key (optional)"
