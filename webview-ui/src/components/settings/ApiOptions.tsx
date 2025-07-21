@@ -144,6 +144,9 @@ const ApiOptions = ({
 
 	const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
+	// Track if user has explicitly unselected morph while on OpenRouter
+	const [userUnselectedMorph, setUserUnselectedMorph] = useState(false)
+
 	const handleInputChange = useCallback(
 		<K extends keyof ProviderSettings, E>(
 			field: K,
@@ -177,10 +180,10 @@ const ApiOptions = ({
 
 	// Automatically enable Morph when OpenRouter is the selected provider
 	useEffect(() => {
-		if (selectedProvider === "openrouter" && !apiConfiguration.morphEnabled) {
+		if (selectedProvider === "openrouter" && !apiConfiguration.morphEnabled && !userUnselectedMorph) {
 			setApiConfigurationField("morphEnabled", true)
 		}
-	}, [selectedProvider, apiConfiguration.morphEnabled, setApiConfigurationField])
+	}, [selectedProvider, apiConfiguration.morphEnabled, setApiConfigurationField, userUnselectedMorph])
 
 	// Debounced refresh model updates, only executed 250ms after the user
 	// stops typing.
@@ -251,6 +254,9 @@ const ApiOptions = ({
 	const onProviderChange = useCallback(
 		(value: ProviderName) => {
 			setApiConfigurationField("apiProvider", value)
+
+			// Reset user unselected morph state when changing providers
+			setUserUnselectedMorph(false)
 
 			// Automatically enable Morph when OpenRouter is selected
 			if (value === "openrouter") {
@@ -673,6 +679,12 @@ const ApiOptions = ({
 
 			{!fromWelcomeView && (
 				<>
+					<MorphSettingsInternal
+						apiConfiguration={apiConfiguration}
+						handleInputChange={handleInputChange}
+						setApiConfigurationField={setApiConfigurationField}
+						setUserUnselectedMorph={setUserUnselectedMorph}
+					/>
 					<DiffSettingsControl
 						diffEnabled={apiConfiguration.diffEnabled}
 						fuzzyMatchThreshold={apiConfiguration.fuzzyMatchThreshold}
@@ -687,11 +699,6 @@ const ApiOptions = ({
 						value={apiConfiguration.rateLimitSeconds || 0}
 						onChange={(value) => setApiConfigurationField("rateLimitSeconds", value)}
 					/>
-					<MorphSettingsInternal
-						apiConfiguration={apiConfiguration}
-						handleInputChange={handleInputChange}
-						setApiConfigurationField={setApiConfigurationField}
-					/>
 				</>
 			)}
 		</div>
@@ -705,15 +712,22 @@ interface MorphSettingsInternalProps {
 		transform?: (event: E) => ProviderSettings[K],
 	) => (event: E | Event) => void
 	setApiConfigurationField: <K extends keyof ProviderSettings>(field: K, value: ProviderSettings[K]) => void
+	setUserUnselectedMorph: (value: boolean) => void
 }
 
 const MorphSettingsInternal = ({
 	apiConfiguration,
 	handleInputChange,
 	setApiConfigurationField,
+	setUserUnselectedMorph,
 }: MorphSettingsInternalProps) => {
 	const handleMorphEnabledChange = (enabled: boolean) => {
 		setApiConfigurationField("morphEnabled", enabled)
+
+		// Track if user unselected morph while on OpenRouter
+		if (!enabled && apiConfiguration.apiProvider === "openrouter") {
+			setUserUnselectedMorph(true)
+		}
 	}
 
 	return (
@@ -724,23 +738,24 @@ const MorphSettingsInternal = ({
 				data-testid="morph-enabled-checkbox">
 				Enable Editing with Morph FastApply
 			</Checkbox>
-
 			{apiConfiguration.morphEnabled && (
 				<div className="space-y-3 pl-6">
-					<div className="text-xs text-vscode-descriptionForeground">
-						Configure Morph for AI-powered fast file editing. Leave API key empty to use OpenRouter if
-						available.
-					</div>
-
-					<VSCodeTextField
-						type="password"
-						value={apiConfiguration.morphApiKey || ""}
-						placeholder="Enter your Morph API key (optional)"
-						onInput={handleInputChange("morphApiKey", inputEventTransform)}
-						data-testid="morph-api-key"
-						className="w-full">
-						API Key
-					</VSCodeTextField>
+					{apiConfiguration.apiProvider !== "openrouter" && (
+						<>
+							<div className="text-xs text-vscode-descriptionForeground">
+								Configure Morph for AI-powered fast file editing.
+							</div>
+							<VSCodeTextField
+								type="password"
+								value={apiConfiguration.morphApiKey || ""}
+								placeholder="Enter your Morph API key (optional)"
+								onInput={handleInputChange("morphApiKey", inputEventTransform)}
+								data-testid="morph-api-key"
+								className="w-full">
+								API Key
+							</VSCodeTextField>
+						</>
+					)}
 				</div>
 			)}
 		</div>
