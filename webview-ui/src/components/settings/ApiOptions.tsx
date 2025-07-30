@@ -158,8 +158,6 @@ const ApiOptions = ({
 
 	const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
-	// Track if user has explicitly unselected morph while on OpenRouter
-	const [userUnselectedMorph, setUserUnselectedMorph] = useState(false)
 	const [isAdvancedSettingsOpen, setIsAdvancedSettingsOpen] = useState(false)
 
 	const handleInputChange = useCallback(
@@ -205,13 +203,6 @@ const ApiOptions = ({
 			setApiConfigurationField("apiModelId", selectedModelId)
 		}
 	}, [selectedModelId, setApiConfigurationField, apiConfiguration.apiModelId])
-
-	// Automatically enable Morph when OpenRouter is the selected provider
-	useEffect(() => {
-		if (selectedProvider === "openrouter" && !apiConfiguration.morphEnabled && !userUnselectedMorph) {
-			setApiConfigurationField("morphEnabled", true)
-		}
-	}, [selectedProvider, apiConfiguration.morphEnabled, setApiConfigurationField, userUnselectedMorph])
 
 	// Debounced refresh model updates, only executed 250ms after the user
 	// stops typing.
@@ -282,14 +273,6 @@ const ApiOptions = ({
 	const onProviderChange = useCallback(
 		(value: ProviderName) => {
 			setApiConfigurationField("apiProvider", value)
-
-			// Reset user unselected morph state when changing providers
-			setUserUnselectedMorph(false)
-
-			// Automatically enable Morph when OpenRouter is selected
-			if (value === "openrouter") {
-				setApiConfigurationField("morphEnabled", true)
-			}
 
 			// It would be much easier to have a single attribute that stores
 			// the modelId, but we have a separate attribute for each of
@@ -373,16 +356,28 @@ const ApiOptions = ({
 		if (!name) {
 			return undefined
 		}
-		
-		{/* kilocode_change start */}
+
+		{
+			/* kilocode_change start */
+		}
 		// Providers that don't have documentation pages yet
-		const excludedProviders = ["fireworks", "gemini-cli", "moonshot", "chutes", "cerebras", "virtual-quota-fallback", "litellm"]
+		const excludedProviders = [
+			"fireworks",
+			"gemini-cli",
+			"moonshot",
+			"chutes",
+			"cerebras",
+			"virtual-quota-fallback",
+			"litellm",
+		]
 
 		// Skip documentation link when the provider is excluded because documentation is not available
 		if (excludedProviders.includes(selectedProvider)) {
 			return undefined
 		}
-		{/* kilocode_change end */}
+		{
+			/* kilocode_change end */
+		}
 
 		// Get the URL slug - use custom mapping if available, otherwise use the provider key.
 		const slugs: Record<string, string> = {
@@ -696,12 +691,11 @@ const ApiOptions = ({
 							todoListEnabled={apiConfiguration.todoListEnabled}
 							onChange={(field, value) => setApiConfigurationField(field, value)}
 						/>
-					<MorphSettingsInternal
-						apiConfiguration={apiConfiguration}
-						handleInputChange={handleInputChange}
-						setApiConfigurationField={setApiConfigurationField}
-						setUserUnselectedMorph={setUserUnselectedMorph}
-					/>
+						<MorphSettingsInternal
+							apiConfiguration={apiConfiguration}
+							handleInputChange={handleInputChange}
+							setApiConfigurationField={setApiConfigurationField}
+						/>
 						<DiffSettingsControl
 							diffEnabled={apiConfiguration.diffEnabled}
 							fuzzyMatchThreshold={apiConfiguration.fuzzyMatchThreshold}
@@ -789,22 +783,15 @@ interface MorphSettingsInternalProps {
 		transform?: (event: E) => ProviderSettings[K],
 	) => (event: E | Event) => void
 	setApiConfigurationField: <K extends keyof ProviderSettings>(field: K, value: ProviderSettings[K]) => void
-	setUserUnselectedMorph: (value: boolean) => void
 }
 
 const MorphSettingsInternal = ({
 	apiConfiguration,
 	handleInputChange,
 	setApiConfigurationField,
-	setUserUnselectedMorph,
 }: MorphSettingsInternalProps) => {
 	const handleMorphEnabledChange = (enabled: boolean) => {
 		setApiConfigurationField("morphEnabled", enabled)
-
-		// Track if user unselected morph while on OpenRouter
-		if (!enabled && apiConfiguration.apiProvider === "openrouter") {
-			setUserUnselectedMorph(true)
-		}
 	}
 
 	return (

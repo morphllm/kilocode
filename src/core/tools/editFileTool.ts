@@ -16,12 +16,6 @@ async function validateParams(
 	codeEdit: string | undefined,
 	pushToolResult: PushToolResult,
 ): Promise<boolean> {
-	console.log("[MORPH DEBUG] validateParams called with params:", {
-		targetFile,
-		instructions,
-		codeEdit,
-	})
-
 	if (!targetFile) {
 		cline.consecutiveMistakeCount++
 		cline.recordToolError("edit_file")

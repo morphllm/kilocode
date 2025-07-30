@@ -574,23 +574,6 @@ describe("ApiOptions", () => {
 	})
 
 	describe("Morph settings tests", () => {
-		it("automatically enables Morph when OpenRouter provider is selected", () => {
-			const mockSetApiConfigurationField = vi.fn()
-
-			// Test that when the component is rendered with openrouter provider
-			// and morphEnabled is false, it automatically calls setApiConfigurationField to enable morph
-			renderApiOptions({
-				apiConfiguration: {
-					apiProvider: "openrouter",
-					morphEnabled: false,
-				},
-				setApiConfigurationField: mockSetApiConfigurationField,
-			})
-
-			// The useEffect should automatically call setApiConfigurationField to enable Morph
-			expect(mockSetApiConfigurationField).toHaveBeenCalledWith("morphEnabled", true)
-		})
-
 		it("shows Morph checkbox as checked when OpenRouter is configured with Morph enabled", () => {
 			renderApiOptions({
 				apiConfiguration: {
