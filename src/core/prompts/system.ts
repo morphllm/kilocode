@@ -123,7 +123,7 @@ ${getCapabilitiesSection(cwd, supportsComputerUse, shouldIncludeMcp ? mcpHub : u
 
 ${modesSection}
 
-${getRulesSection(cwd, supportsComputerUse, effectiveDiffStrategy, codeIndexManager)}
+${getRulesSection(cwd, supportsComputerUse, effectiveDiffStrategy, codeIndexManager, experiments)}
 
 ${getSystemInfoSection(cwd)}
 
