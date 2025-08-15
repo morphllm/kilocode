@@ -34,6 +34,7 @@ import {
 	addCustomInstructions,
 	markdownFormattingSection,
 } from "./sections"
+import { getMorphInstructions } from "./tools/edit-file" // kilocode_change: Morph fast apply
 
 // Helper function to get prompt component, filtering out empty objects
 export function getPromptComponent(
@@ -116,13 +117,13 @@ ${getToolDescriptionsForMode(
 
 ${getToolUseGuidelinesSection(codeIndexManager)}
 
-${mcpServersSection}
+${getMorphInstructions(experiments) /* kilocode_change: newlines are returned by function */}${mcpServersSection}
 
 ${getCapabilitiesSection(cwd, supportsComputerUse, shouldIncludeMcp ? mcpHub : undefined, effectiveDiffStrategy, codeIndexManager)}
 
 ${modesSection}
 
-${getRulesSection(cwd, supportsComputerUse, effectiveDiffStrategy, codeIndexManager, experiments)}
+${getRulesSection(cwd, supportsComputerUse, effectiveDiffStrategy, codeIndexManager)}
 
 ${getSystemInfoSection(cwd)}
 
@@ -207,7 +208,7 @@ export const SYSTEM_PROMPT = async (
 
 ${fileCustomSystemPrompt}
 
-${customInstructions}`
+${getMorphInstructions(experiments) /* kilocode_change: Morph fast apply */}${customInstructions}`
 	}
 
 	// If diff is disabled, don't pass the diffStrategy
