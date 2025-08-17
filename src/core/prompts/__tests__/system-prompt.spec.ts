@@ -669,7 +669,7 @@ describe("SYSTEM_PROMPT", () => {
 		expect(prompt).toContain("## update_todo_list")
 	})
 
-	it("should exclude traditional editing tools and include Morph instructions when morphFastApply is enabled", async () => {
+	it("should exclude edit-only tools but keep file creation tools when morphFastApply is enabled", async () => {
 		const experimentsWithMorph = {
 			morphFastApply: true,
 		}
@@ -696,17 +696,16 @@ describe("SYSTEM_PROMPT", () => {
 		// Should include edit_file tool
 		expect(prompt).toContain("## edit_file")
 
-		// Should NOT include traditional editing tools
+		// Should NOT include edit-only tools
 		expect(prompt).not.toContain("## apply_diff")
-		expect(prompt).not.toContain("## write_to_file")
-		expect(prompt).not.toContain("## insert_content")
 		expect(prompt).not.toContain("## search_and_replace")
+
+		// Should STILL include file creation tools
+		expect(prompt).toContain("## write_to_file")
+		expect(prompt).toContain("## insert_content")
 
 		// Should contain Morph-specific instructions
 		expect(prompt).toContain("Morph FastApply is enabled")
-		expect(prompt).toContain(
-			"Traditional editing tools (apply_diff, write_to_file, insert_content, search_and_replace) are disabled",
-		)
 		expect(prompt).toContain("ONLY use the edit_file tool for file modifications")
 	})
 
@@ -745,9 +744,7 @@ describe("SYSTEM_PROMPT", () => {
 
 		// Should NOT contain Morph-specific instructions
 		expect(prompt).not.toContain("Morph FastApply is enabled")
-		expect(prompt).not.toContain(
-			"Traditional editing tools (apply_diff, write_to_file, insert_content, search_and_replace) are disabled",
-		)
+		expect(prompt).not.toContain("Traditional editing tools (apply_diff, search_and_replace) are disabled")
 
 		// Should contain traditional editing instructions
 		expect(prompt).toContain("For editing files, you have access to these tools:")
