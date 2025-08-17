@@ -47,7 +47,7 @@ function getEditingInstructions(diffStrategy?: DiffStrategy): string {
 
 function getMorphEditingInstructions(): string {
 	return `- **Morph FastApply is enabled.** You have access to the \`edit_file\` tool which uses a specialized model optimized for intelligent code understanding and modification.
-- **ONLY use the edit_file tool for file modifications.** Traditional editing tools (apply_diff, write_to_file, insert_content, search_and_replace) are disabled in Morph mode.
+- **ONLY use the edit_file tool for modifying existing files.** Traditional editing tools (apply_diff, search_and_replace) are disabled in Morph mode. You can still use write_to_file for creating new files and insert_content for adding content to files.
 - **Focus on clear instructions and precise code edits** using the edit_file format with \`// ... existing code ...\` placeholders to represent unchanged sections.
 - **The edit_file tool requires three parameters:**
   - \`target_file\`: Full path to the file to modify

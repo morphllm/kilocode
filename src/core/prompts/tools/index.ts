@@ -119,8 +119,9 @@ export function getToolDescriptionsForMode(
 	if (experiments?.morphFastApply !== true) {
 		tools.delete("edit_file")
 	} else {
-		// When Morph is enabled, disable traditional editing tools
-		const traditionalEditingTools = ["apply_diff", "write_to_file", "insert_content", "search_and_replace"]
+		// When Morph is enabled, disable traditional editing tools that only edit existing files
+		// Keep write_to_file and insert_content as they can create new files
+		const traditionalEditingTools = ["apply_diff", "search_and_replace"]
 		traditionalEditingTools.forEach((tool) => tools.delete(tool))
 	}
 
