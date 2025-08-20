@@ -211,7 +211,7 @@ async function applyMorphEdit(
 		const state = await provider.getState()
 
 		// Check if user has Morph enabled via OpenRouter or direct API
-		const morphConfig = await getMorphConfiguration(state.experiments, state.apiConfiguration)
+		const morphConfig = await getMorphConfiguration(state.experiments, state.apiConfiguration, state)
 		if (!morphConfig.available) {
 			return { success: false, error: morphConfig.error || "Morph is not available" }
 		}
@@ -313,6 +313,7 @@ interface MorphConfiguration {
 async function getMorphConfiguration(
 	experiments: Experiments,
 	apiConfig: ProviderSettings,
+	globalState: any, // kilocode_change: Added to access global morphApiKey
 ): Promise<MorphConfiguration> {
 	// Check if Morph is enabled in API configuration
 	if (experiments.morphFastApply !== true) {
@@ -322,16 +323,33 @@ async function getMorphConfiguration(
 		}
 	}
 
-	// If user has direct Morph API key, use it
-	if (apiConfig.morphApiKey) {
+	// Check if user has direct Morph API key in global settings
+	const hasGlobalMorphApiKey = Boolean(globalState.morphApiKey)
+
+	// Check if provider supports Morph natively (openrouter only for now)
+	const isOpenRouterProvider = apiConfig.apiProvider === "openrouter" && Boolean(apiConfig.openRouterApiKey)
+	const hasNativeMorphSupport = isOpenRouterProvider
+
+	// Morph is available if: (provider supports it natively) OR (has global morph API key)
+	// If neither condition is met, behave as if Morph is disabled entirely
+	if (!hasNativeMorphSupport && !hasGlobalMorphApiKey) {
+		return {
+			available: false,
+			error: "Morph is disabled. Enable it in API Options > Enable Editing with Morph FastApply",
+		}
+	}
+
+	// Priority 1: Use direct Morph API key if available
+	if (hasGlobalMorphApiKey) {
 		return {
 			available: true,
-			apiKey: apiConfig.morphApiKey,
+			apiKey: globalState.morphApiKey,
 			baseUrl: "https://api.morphllm.com/v1",
 			model: "auto",
 		}
 	}
 
+	// Priority 2: Use KiloCode provider
 	if (apiConfig.apiProvider === "kilocode") {
 		const token = apiConfig.kilocodeToken
 		if (!token) {
@@ -345,11 +363,11 @@ async function getMorphConfiguration(
 		}
 	}
 
-	// If user is using OpenRouter as their provider, use Morph through OpenRouter
+	// Priority 3: Use OpenRouter provider
 	if (apiConfig.apiProvider === "openrouter") {
 		const token = apiConfig.openRouterApiKey
 		if (!token) {
-			return { available: false, error: "No Openrouter api token available to use Morph" }
+			return { available: false, error: "No OpenRouter API token available to use Morph" }
 		}
 		return {
 			available: true,
@@ -359,8 +377,9 @@ async function getMorphConfiguration(
 		}
 	}
 
+	// This should not be reached due to the check above, but included for completeness
 	return {
 		available: false,
-		error: "Morph is enabled but not configured. Either set a Morph API key in API Options or use OpenRouter with Morph access.",
+		error: "Morph configuration error. Please check your settings.",
 	}
 }

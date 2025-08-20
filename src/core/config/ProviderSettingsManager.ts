@@ -32,6 +32,7 @@ export const providerProfilesSchema = z.object({
 			openAiHeadersMigrated: z.boolean().optional(),
 			consecutiveMistakeLimitMigrated: z.boolean().optional(),
 			todoListEnabledMigrated: z.boolean().optional(),
+			morphApiKeyMigrated: z.boolean().optional(), // kilocode_change: Morph API key migration
 		})
 		.optional(),
 })
@@ -123,6 +124,7 @@ export class ProviderSettingsManager {
 						openAiHeadersMigrated: false,
 						consecutiveMistakeLimitMigrated: false,
 						todoListEnabledMigrated: false,
+						morphApiKeyMigrated: false, // kilocode_change: Morph API key migration
 					} // Initialize with default values
 					isDirty = true
 				}
@@ -154,6 +156,12 @@ export class ProviderSettingsManager {
 				if (!providerProfiles.migrations.todoListEnabledMigrated) {
 					await this.migrateTodoListEnabled(providerProfiles)
 					providerProfiles.migrations.todoListEnabledMigrated = true
+					isDirty = true
+				}
+
+				if (!providerProfiles.migrations.morphApiKeyMigrated) {
+					await this.migrateMorphApiKey(providerProfiles)
+					providerProfiles.migrations.morphApiKeyMigrated = true
 					isDirty = true
 				}
 
@@ -271,6 +279,36 @@ export class ProviderSettingsManager {
 			}
 		} catch (error) {
 			console.error(`[MigrateTodoListEnabled] Failed to migrate todo list enabled setting:`, error)
+		}
+	}
+
+	private async migrateMorphApiKey(providerProfiles: ProviderProfiles) {
+		try {
+			// Find any provider profile with morphApiKey set
+			let morphApiKeyToMigrate: string | undefined
+
+			for (const [_name, apiConfig] of Object.entries(providerProfiles.apiConfigs)) {
+				// Check if this config has morphApiKey (using type assertion since it's no longer in the schema)
+				const configAny = apiConfig as any
+				if (configAny.morphApiKey) {
+					morphApiKeyToMigrate = configAny.morphApiKey
+					// Clear it from the provider config
+					configAny.morphApiKey = undefined
+					break // Use the first one found
+				}
+			}
+
+			// If we found a morphApiKey, migrate it to global settings
+			if (morphApiKeyToMigrate) {
+				try {
+					await this.context.globalState.update("morphApiKey", morphApiKeyToMigrate)
+					console.log("[MigrateMorphApiKey] Successfully migrated morphApiKey to global settings")
+				} catch (error) {
+					console.error("[MigrateMorphApiKey] Error setting global morphApiKey:", error)
+				}
+			}
+		} catch (error) {
+			console.error(`[MigrateMorphApiKey] Failed to migrate morphApiKey:`, error)
 		}
 	}
 

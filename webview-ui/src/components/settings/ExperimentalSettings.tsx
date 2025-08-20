@@ -1,10 +1,7 @@
 import { HTMLAttributes } from "react"
 import { FlaskConical } from "lucide-react"
 
-import type {
-	Experiments,
-	ProviderSettings, // kilocode_change
-} from "@roo-code/types"
+import type { Experiments } from "@roo-code/types"
 
 import { EXPERIMENT_IDS, experimentConfigsMap } from "@roo/experiments"
 
@@ -15,21 +12,19 @@ import { SetExperimentEnabled } from "./types"
 import { SectionHeader } from "./SectionHeader"
 import { Section } from "./Section"
 import { ExperimentalFeature } from "./ExperimentalFeature"
-import { MorphSettings } from "./MorphSettings" // kilocode_change
+import { GlobalMorphSettings } from "./GlobalMorphSettings" // kilocode_change: Use global version
 
 type ExperimentalSettingsProps = HTMLAttributes<HTMLDivElement> & {
 	experiments: Experiments
 	setExperimentEnabled: SetExperimentEnabled
-	apiConfiguration: ProviderSettings // kilocode_change
-	setApiConfigurationField: <K extends keyof ProviderSettings>(field: K, value: ProviderSettings[K]) => void // kilocode_change
+	morphApiKey?: string // kilocode_change: Use global morphApiKey
 }
 
 export const ExperimentalSettings = ({
 	experiments,
 	setExperimentEnabled,
 	className,
-	apiConfiguration, // kilocode_change
-	setApiConfigurationField, // kilocode_change
+	morphApiKey, // kilocode_change: Use global morphApiKey
 	...props
 }: ExperimentalSettingsProps) => {
 	const { t } = useAppTranslation()
@@ -77,12 +72,7 @@ export const ExperimentalSettings = ({
 											)
 										}
 									/>
-									{enabled && (
-										<MorphSettings
-											apiConfiguration={apiConfiguration}
-											setApiConfigurationField={setApiConfigurationField}
-										/>
-									)}
+									{enabled && <GlobalMorphSettings morphApiKey={morphApiKey} />}
 								</>
 							)
 						}
