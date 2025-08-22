@@ -165,6 +165,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		enableCheckpoints,
 		diffEnabled,
 		experiments,
+		morphApiKey,
 		fuzzyMatchThreshold,
 		maxOpenTabsContext,
 		maxWorkspaceFiles,
@@ -846,8 +847,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 						<ExperimentalSettings
 							setExperimentEnabled={setExperimentEnabled}
 							experiments={experiments}
-							apiConfiguration={apiConfiguration /*kilocode_change*/}
-							setApiConfigurationField={setApiConfigurationField /*kilocode_change*/}
+							morphApiKey={morphApiKey} // kilocode_change: Use global morphApiKey
 						/>
 					)}
 

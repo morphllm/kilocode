@@ -14,6 +14,33 @@ import { getKiloBaseUriFromToken } from "../../shared/kilocode/token"
 import { DEFAULT_HEADERS } from "../../api/providers/constants"
 import { TelemetryService } from "@roo-code/telemetry"
 
+// Morph model pricing per 1M tokens
+const MORPH_MODEL_PRICING = {
+	"morph-v3-fast": {
+		inputPrice: 0.8, // $0.8 per 1M tokens
+		outputPrice: 1.2, // $1.2 per 1M tokens
+	},
+	"morph-v3-large": {
+		inputPrice: 0.9, // $0.9 per 1M tokens
+		outputPrice: 1.9, // $1.9 per 1M tokens
+	},
+	auto: {
+		inputPrice: 0.9, // Default to morph-v3-large pricing
+		outputPrice: 1.9,
+	},
+} as const
+
+function calculateMorphCost(inputTokens: number, outputTokens: number, model: string): number {
+	const normalizedModel = model.replace("morph/", "") // Remove OpenRouter prefix if present
+	const pricing =
+		MORPH_MODEL_PRICING[normalizedModel as keyof typeof MORPH_MODEL_PRICING] || MORPH_MODEL_PRICING["auto"]
+
+	const inputCost = (pricing.inputPrice / 1_000_000) * inputTokens
+	const outputCost = (pricing.outputPrice / 1_000_000) * outputTokens
+
+	return inputCost + outputCost
+}
+
 async function validateParams(
 	cline: Task,
 	targetFile: string | undefined,
@@ -86,18 +113,6 @@ export async function editFileTool(
 		const absolutePath = path.resolve(cline.cwd, targetFile)
 		const relPath = getReadablePath(cline.cwd, absolutePath)
 
-		// Check if file exists
-		if (!(await fileExistsAtPath(absolutePath))) {
-			cline.consecutiveMistakeCount++
-			cline.recordToolError("edit_file")
-			pushToolResult(
-				formatResponse.toolError(
-					`The file ${relPath} does not exist. Use write_to_file to create new files, or make sure the file path is correct.`,
-				),
-			)
-			return
-		}
-
 		// Check if file access is allowed
 		const accessAllowed = cline.rooIgnoreController?.validateAccess(relPath)
 		if (!accessAllowed) {
@@ -106,20 +121,21 @@ export async function editFileTool(
 			return
 		}
 
+		// Check if file exists
+		if (!(await fileExistsAtPath(absolutePath))) {
+			await fs.writeFile(absolutePath, "")
+		}
+
 		// Read the original file content
 		const originalContent = await fs.readFile(absolutePath, "utf-8")
 
 		// Check if Morph is available
-		const morphApplyResult = await applyMorphEdit(originalContent, editInstructions, editCode, cline)
+		const morphApplyResult = await applyMorphEdit(originalContent, editInstructions, editCode, cline, relPath)
 
 		if (!morphApplyResult.success) {
 			cline.consecutiveMistakeCount++
 			cline.recordToolError("edit_file")
-			pushToolResult(
-				formatResponse.toolError(
-					`Failed to apply edit using Morph: ${morphApplyResult.error}. Consider using apply_diff tool instead.`,
-				),
-			)
+			pushToolResult(formatResponse.toolError(`Failed to apply edit using Morph: ${morphApplyResult.error}`))
 			return
 		}
 
@@ -183,6 +199,7 @@ async function applyMorphEdit(
 	instructions: string,
 	codeEdit: string,
 	cline: Task,
+	filePath?: string,
 ): Promise<MorphApplyResult> {
 	try {
 		// Get the current API configuration
@@ -194,10 +211,38 @@ async function applyMorphEdit(
 		const state = await provider.getState()
 
 		// Check if user has Morph enabled via OpenRouter or direct API
-		const morphConfig = await getMorphConfiguration(state.experiments, state.apiConfiguration)
+		const morphConfig = await getMorphConfiguration(state.experiments, state.apiConfiguration, state)
 		if (!morphConfig.available) {
 			return { success: false, error: morphConfig.error || "Morph is not available" }
 		}
+
+		// Create api_req_started message for tracking
+		const morphApiReqIndex = cline.clineMessages.length
+
+		// Create a verbose request description similar to regular API requests
+		const fileName = filePath ? path.basename(filePath) : "unknown file"
+		const truncatedCodeEdit = codeEdit.length > 500 ? codeEdit.substring(0, 500) + "\n...(truncated)" : codeEdit
+		const morphRequestDescription = [
+			`Morph FastApply Edit (${morphConfig.model})`,
+			``,
+			`File: ${fileName}`,
+			`Instructions: ${instructions}`,
+			``,
+			`Code Edit:`,
+			"```",
+			truncatedCodeEdit,
+			"```",
+			``,
+			`Original Content: ${originalContent.length} characters`,
+		].join("\n")
+
+		await cline.say(
+			"api_req_started",
+			JSON.stringify({
+				request: morphRequestDescription,
+				apiProtocol: "openai",
+			}),
+		)
 
 		// Create OpenAI client for Morph API
 		const client = new OpenAI({
@@ -232,6 +277,21 @@ async function applyMorphEdit(
 			return { success: false, error: "Morph API returned empty response" }
 		}
 
+		// Extract usage information from response
+		const usage = response.usage
+		const inputTokens = usage?.prompt_tokens || 0
+		const outputTokens = usage?.completion_tokens || 0
+		const cost = calculateMorphCost(inputTokens, outputTokens, morphConfig.model!)
+
+		// Update the api_req_started message with usage and cost data
+		const existingData = JSON.parse(cline.clineMessages[morphApiReqIndex].text || "{}")
+		cline.clineMessages[morphApiReqIndex].text = JSON.stringify({
+			...existingData,
+			tokensIn: inputTokens,
+			tokensOut: outputTokens,
+			cost: cost,
+		})
+
 		return { success: true, result: mergedCode }
 	} catch (error) {
 		TelemetryService.instance.captureException(error, { context: "applyMorphEdit" })
@@ -253,6 +313,7 @@ interface MorphConfiguration {
 async function getMorphConfiguration(
 	experiments: Experiments,
 	apiConfig: ProviderSettings,
+	globalState: any, // kilocode_change: Added to access global morphApiKey
 ): Promise<MorphConfiguration> {
 	// Check if Morph is enabled in API configuration
 	if (experiments.morphFastApply !== true) {
@@ -262,16 +323,33 @@ async function getMorphConfiguration(
 		}
 	}
 
-	// If user has direct Morph API key, use it
-	if (apiConfig.morphApiKey) {
+	// Check if user has direct Morph API key in global settings
+	const hasGlobalMorphApiKey = Boolean(globalState.morphApiKey)
+
+	// Check if provider supports Morph natively (openrouter only for now)
+	const isOpenRouterProvider = apiConfig.apiProvider === "openrouter" && Boolean(apiConfig.openRouterApiKey)
+	const hasNativeMorphSupport = isOpenRouterProvider
+
+	// Morph is available if: (provider supports it natively) OR (has global morph API key)
+	// If neither condition is met, behave as if Morph is disabled entirely
+	if (!hasNativeMorphSupport && !hasGlobalMorphApiKey) {
+		return {
+			available: false,
+			error: "Morph is disabled. Enable it in API Options > Enable Editing with Morph FastApply",
+		}
+	}
+
+	// Priority 1: Use direct Morph API key if available
+	if (hasGlobalMorphApiKey) {
 		return {
 			available: true,
-			apiKey: apiConfig.morphApiKey,
+			apiKey: globalState.morphApiKey,
 			baseUrl: "https://api.morphllm.com/v1",
 			model: "auto",
 		}
 	}
 
+	// Priority 2: Use KiloCode provider
 	if (apiConfig.apiProvider === "kilocode") {
 		const token = apiConfig.kilocodeToken
 		if (!token) {
@@ -285,11 +363,11 @@ async function getMorphConfiguration(
 		}
 	}
 
-	// If user is using OpenRouter as their provider, use Morph through OpenRouter
+	// Priority 3: Use OpenRouter provider
 	if (apiConfig.apiProvider === "openrouter") {
 		const token = apiConfig.openRouterApiKey
 		if (!token) {
-			return { available: false, error: "No Openrouter api token available to use Morph" }
+			return { available: false, error: "No OpenRouter API token available to use Morph" }
 		}
 		return {
 			available: true,
@@ -299,8 +377,9 @@ async function getMorphConfiguration(
 		}
 	}
 
+	// This should not be reached due to the check above, but included for completeness
 	return {
 		available: false,
-		error: "Morph is enabled but not configured. Either set a Morph API key in API Options or use OpenRouter with Morph access.",
+		error: "Morph configuration error. Please check your settings.",
 	}
 }

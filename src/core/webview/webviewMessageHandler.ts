@@ -1106,6 +1106,10 @@ export const webviewMessageHandler = async (
 			await updateGlobalState("fuzzyMatchThreshold", message.value)
 			await provider.postStateToWebview()
 			break
+		case "morphApiKey":
+			await updateGlobalState("morphApiKey", message.text)
+			await provider.postStateToWebview()
+			break
 		case "updateVSCodeSetting": {
 			const { setting, value } = message
 

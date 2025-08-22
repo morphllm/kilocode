@@ -2477,12 +2477,12 @@ export class ClineProvider
 			}
 		}
 
-		function getFastApply() {
+		const getFastApply = () => {
 			try {
 				return {
 					fastApply: {
 						morphFastApply: Boolean(experiments.morphFastApply),
-						morphApiKey: Boolean(apiConfiguration.morphApiKey),
+						morphApiKey: Boolean(this.contextProxy.getValue("morphApiKey")), // kilocode_change: Use global morphApiKey
 					},
 				}
 			} catch (error) {

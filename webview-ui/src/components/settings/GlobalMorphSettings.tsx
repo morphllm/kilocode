@@ -1,24 +1,26 @@
-// kilocode_change: Morph fast apply - file added
+// kilocode_change: Morph fast apply - global settings version
 
 import { VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
-import { ProviderSettings } from "@roo-code/types"
 import { useAppTranslation } from "@/i18n/TranslationContext"
+import { vscode } from "@/utils/vscode"
 
-export const MorphSettings = ({
-	apiConfiguration,
-	setApiConfigurationField,
-}: {
-	apiConfiguration: ProviderSettings
-	setApiConfigurationField: <K extends keyof ProviderSettings>(field: K, value: ProviderSettings[K]) => void
-}) => {
+export const GlobalMorphSettings = ({ morphApiKey }: { morphApiKey?: string }) => {
 	const { t } = useAppTranslation()
+
+	const handleMorphApiKeyChange = (value: string) => {
+		vscode.postMessage({
+			type: "morphApiKey",
+			text: value || "",
+		})
+	}
+
 	return (
 		<div>
 			<VSCodeTextField
 				type="password"
-				value={apiConfiguration?.morphApiKey || ""}
+				value={morphApiKey || ""}
 				placeholder={t("settings:experimental.MORPH_FAST_APPLY.placeholder")}
-				onChange={(e) => setApiConfigurationField("morphApiKey", (e.target as any)?.value || "")}
+				onChange={(e) => handleMorphApiKeyChange((e.target as any)?.value || "")}
 				className="w-full">
 				{t("settings:experimental.MORPH_FAST_APPLY.apiKey")}
 			</VSCodeTextField>
