@@ -54,6 +54,7 @@ import CodebaseSearchResultsDisplay from "./CodebaseSearchResultsDisplay"
 import { cn } from "@/lib/utils"
 import { KiloChatRowUserFeedback } from "../kilocode/chat/KiloChatRowUserFeedback" // kilocode_change
 import { StandardTooltip } from "../ui" // kilocode_change
+import { formatLargeNumber } from "@src/utils/format"
 
 interface ChatRowProps {
 	message: ClineMessage
@@ -140,6 +141,7 @@ export const ChatRowContent = ({
 	// const [editedContent, setEditedContent] = useState("") // kilocode_change
 	// const [editMode, setEditMode] = useState<Mode>(mode || "code") // kilocode_change
 	const [_editImages, setEditImages] = useState<string[]>([]) // kilocode_change
+	const [isFastApplyExpanded, setIsFastApplyExpanded] = useState(false)
 	const { copyWithFeedback } = useCopyToClipboard()
 
 	// Handle message events for image selection during edit mode
@@ -424,13 +426,53 @@ export const ChatRowContent = ({
 							isExpanded={isExpanded}
 							onToggleExpand={handleToggleExpand}
 						/>
-						{
-							/*TODO styling*/ tool.fastApplyResult ? (
-								<div>{JSON.stringify(tool.fastApplyResult)}</div>
-							) : (
-								<></>
-							)
-						}
+						{tool.fastApplyResult && (
+							<div className="mt-2">
+								{/* FastApply collapsed header - clickable */}
+								<div
+									className="flex items-center justify-between cursor-pointer select-none p-2 bg-vscode-badge-background border border-vscode-editorGroup-border rounded-xs"
+									onClick={() => setIsFastApplyExpanded(!isFastApplyExpanded)}>
+									<div className="flex items-center gap-2">
+										<span className="codicon codicon-rocket text-vscode-badge-foreground" />
+										<span className="font-medium text-vscode-badge-foreground">
+											Morph FastApply
+										</span>
+
+										{/* Token metrics */}
+										<div className="flex items-center gap-1">
+											{tool.fastApplyResult.tokensIn && (
+												<span className="flex items-center gap-0.5 text-sm text-vscode-badge-foreground">
+													<span className="codicon codicon-arrow-up" />
+													{formatLargeNumber(tool.fastApplyResult.tokensIn)}
+												</span>
+											)}
+											{tool.fastApplyResult.tokensOut && (
+												<span className="flex items-center gap-0.5 text-sm text-vscode-badge-foreground">
+													<span className="codicon codicon-arrow-down" />
+													{formatLargeNumber(tool.fastApplyResult.tokensOut)}
+												</span>
+											)}
+										</div>
+
+										{/* Cost badge */}
+										{tool.fastApplyResult.cost && tool.fastApplyResult.cost > 0 && (
+											<VSCodeBadge>${tool.fastApplyResult.cost.toFixed(4)}</VSCodeBadge>
+										)}
+									</div>
+
+									<span
+										className={`codicon codicon-chevron-${isFastApplyExpanded ? "up" : "down"} text-vscode-badge-foreground`}
+									/>
+								</div>
+
+								{/* FastApply expanded content */}
+								{isFastApplyExpanded && (
+									<div className="mt-1 p-3 bg-vscode-editor-background border-l border-r border-b border-vscode-editorGroup-border rounded-b-xs">
+										<MarkdownBlock markdown={tool.fastApplyResult.description || ""} />
+									</div>
+								)}
+							</div>
+						)}
 					</>
 				)
 			case "insertContent":
@@ -563,13 +605,53 @@ export const ChatRowContent = ({
 							onToggleExpand={handleToggleExpand}
 							onJumpToFile={() => vscode.postMessage({ type: "openFile", text: "./" + tool.path })}
 						/>
-						{
-							/*TODO styling*/ tool.fastApplyResult ? (
-								<div>{JSON.stringify(tool.fastApplyResult)}</div>
-							) : (
-								<></>
-							)
-						}
+						{tool.fastApplyResult && (
+							<div className="mt-2">
+								{/* FastApply collapsed header - clickable */}
+								<div
+									className="flex items-center justify-between cursor-pointer select-none p-2 bg-vscode-badge-background border border-vscode-editorGroup-border rounded-xs"
+									onClick={() => setIsFastApplyExpanded(!isFastApplyExpanded)}>
+									<div className="flex items-center gap-2">
+										<span className="codicon codicon-rocket text-vscode-badge-foreground" />
+										<span className="font-medium text-vscode-badge-foreground">
+											Morph FastApply
+										</span>
+
+										{/* Token metrics */}
+										<div className="flex items-center gap-1">
+											{tool.fastApplyResult.tokensIn && (
+												<span className="flex items-center gap-0.5 text-sm text-vscode-badge-foreground">
+													<span className="codicon codicon-arrow-up" />
+													{formatLargeNumber(tool.fastApplyResult.tokensIn)}
+												</span>
+											)}
+											{tool.fastApplyResult.tokensOut && (
+												<span className="flex items-center gap-0.5 text-sm text-vscode-badge-foreground">
+													<span className="codicon codicon-arrow-down" />
+													{formatLargeNumber(tool.fastApplyResult.tokensOut)}
+												</span>
+											)}
+										</div>
+
+										{/* Cost badge */}
+										{tool.fastApplyResult.cost && tool.fastApplyResult.cost > 0 && (
+											<VSCodeBadge>${tool.fastApplyResult.cost.toFixed(4)}</VSCodeBadge>
+										)}
+									</div>
+
+									<span
+										className={`codicon codicon-chevron-${isFastApplyExpanded ? "up" : "down"} text-vscode-badge-foreground`}
+									/>
+								</div>
+
+								{/* FastApply expanded content */}
+								{isFastApplyExpanded && (
+									<div className="mt-1 p-3 bg-vscode-editor-background border-l border-r border-b border-vscode-editorGroup-border rounded-b-xs">
+										<MarkdownBlock markdown={tool.fastApplyResult.description || ""} />
+									</div>
+								)}
+							</div>
+						)}
 					</>
 				)
 			case "readFile":
